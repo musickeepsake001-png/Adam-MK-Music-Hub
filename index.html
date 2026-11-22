@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0755c9">
+<title>Adam MK Music Hub</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f3f7ff;color:#14213d}
+header{background:#0755c9;color:white;padding:25px 18px;border-radius:0 0 25px 25px}
+header h1{font-size:25px}
+header p{margin-top:8px;font-size:13px}
+nav{display:flex;gap:10px;overflow:auto;padding:15px}
+nav button{border:0;background:white;color:#0755c9;padding:12px 17px;border-radius:20px;font-weight:bold;white-space:nowrap}
+main{padding:16px}
+.welcome{background:linear-gradient(135deg,#0755c9,#398cff);color:white;padding:25px;border-radius:20px;margin-bottom:20px}
+.welcome h2{margin-bottom:10px}
+.section{background:white;padding:20px;border-radius:18px;margin-bottom:15px;box-shadow:0 3px 12px #dce6f5}
+.section h3{color:#0755c9;margin-bottom:10px}
+.section p{font-size:14px;line-height:1.6}
+.action{display:block;background:#0755c9;color:white;text-align:center;text-decoration:none;padding:13px;border-radius:12px;margin-top:15px;font-weight:bold}
+footer{text-align:center;padding:25px;color:#718096;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+<h1>🎵 Adam MK Music Hub</h1>
+<p>One World • One Music Community</p>
+</header>
+<nav>
+<button onclick="showPage('home')">Home</button>
+<button onclick="showPage('music')">Music</button>
+<button onclick="showPage('artists')">Artists</button>
+<button onclick="showPage('about')">About</button>
+</nav>
+<main id="content">
+<div class="welcome">
+<h2>Welcome to Adam MK Music Hub</h2>
+<p>Discover music, connect with artists and share your talent with the world.</p>
+</div>
+<div class="section">
+<h3>🎧 Discover Music</h3>
+<p>Find new songs and enjoy music from talented artists around the world.</p>
+<a class="action" href="#" onclick="showPage('music');return false">Explore Music</a>
+</div>
+<div class="section">
+<h3>🌍 Meet Artists</h3>
+<p>A global community where musicians can introduce themselves and share their creativity.</p>
+<a class="action" href="#" onclick="showPage('artists');return false">Explore Artists</a>
+</div>
+<div class="section">
+<h3>🚀 Share Your Music</h3>
+<p>Our goal is to give every artist a place to showcase their music and reach more listeners.</p>
+</div>
+</main>
+<footer>© 2026 Adam MK Music Hub<br>Created for music lovers worldwide.</footer>
+<script>
+function showPage(page){
+const content=document.getElementById('content');
+const pages={
+home:`<div class="welcome"><h2>Welcome to Adam MK Music Hub</h2><p>One world, one music community.</p></div><div class="section"><h3>🎵 Music connects us all</h3><p>Discover and share music from around the world.</p></div>`,
+music:`<div class="section"><h3>🎧 Music Library</h3><p>Music discovery and song sharing will be developed here.</p></div>`,
+artists:`<div class="section"><h3>🌍 Artist Community</h3><p>A place for upcoming and established artists to connect.</p></div>`,
+about:`<div class="section"><h3>About Adam MK Music Hub</h3><p>A global platform designed to bring artists and music lovers together.</p></div>`
+};
+content.innerHTML=pages[page]||pages.home;
+}
+</script>
+</body>
+</html>
