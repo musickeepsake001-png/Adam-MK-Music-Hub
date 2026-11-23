@@ -3,49 +3,525 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0755c9">
-<title>Adam MK Music Hub</title>
-<link rel="stylesheet" href="style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adam MK Chat</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#eef4fa;color:#18304a}
+header{background:#0876d1;color:white;padding:20px;text-align:center}
+main{max-width:650px;margin:auto;padding:12px}
+nav{display:flex;flex-wrap:wrap;justify-content:space-around;background:white;padding:10px;position:sticky;top:0;z-index:5}
+button{cursor:pointer;border:0;border-radius:9px;padding:11px;margin:3px}
+nav button{background:none;color:#0876d1;font-weight:bold}
+.action{background:#0876d1;color:white}
+.secondary{background:#e5f1fc;color:#0876d1}
+.card{background:white;padding:16px;border-radius:14px;margin:12px 0;box-shadow:0 2px 8px #0001}
+input,textarea{width:100%;padding:13px;margin:7px 0;border:1px solid #d5e2ef;border-radius:9px}
+textarea{resize:vertical}
+.page{display:none}
+.page.active{display:block}
+#app{display:none}
+.post{padding:12px 0;border-bottom:1px solid #eee;overflow-wrap:anywhere}
+.avatar{width:43px;height:43px;border-radius:50%;object-fit:cover;background:#dceafa}
+.avatar.big{width:95px;height:95px}
+.userline{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.media{width:100%;max-height:400px;object-fit:contain;border-radius:10px;margin-top:8px;background:#111}
+small{color:#718096}
+#notice{color:#0876d1}
+.story{display:inline-block;width:90px;vertical-align:top;text-align:center;margin:5px}
+.story img{width:65px;height:65px;border-radius:50%;object-fit:cover;border:3px solid #0876d1}
+.story button{background:none;padding:2px}
+footer{text-align:center;padding:20px;color:#718096}
+</style>
 </head>
 <body>
 
 <header>
-<h1>🎵 Adam MK Music Hub</h1>
-<p>One World • One Music Community</p>
+<h2>ADAM MK CHAT</h2>
+<p>Connect • Share • Discover</p>
 </header>
 
+<main>
+
+<div id="auth">
+<div class="card">
+<h3>Create Account / Login</h3>
+<input id="name" placeholder="Your name">
+<input id="email" type="email" placeholder="Gmail address">
+<input id="password" type="password" placeholder="Password">
+<button class="action" id="signup">Create Account</button>
+<button class="secondary" id="login">Login</button>
+<p id="authNotice"></p>
+</div>
+</div>
+
+<div id="app">
+
 <nav>
-<button onclick="showPage('home')">Home</button>
-<button onclick="showPage('music')">Music</button>
-<button onclick="showPage('artists')">Artists</button>
-<button onclick="showPage('about')">About</button>
+<button data-page="home">Home</button>
+<button data-page="chat">Chat</button>
+<button data-page="status">Status</button>
+<button data-page="music">Music</button>
+<button data-page="profile">Profile</button>
 </nav>
 
-<main id="content">
-<div class="welcome">
-<h2>Welcome to Adam MK Music Hub</h2>
-<p>Discover music, connect with artists and share your talent with the world.</p>
+<section id="home" class="page active">
+<div class="card">
+<h3>Welcome to Adam MK Chat</h3>
+<p id="welcome"></p>
 </div>
-
-<div class="section">
-<h3>🎧 Discover Music</h3>
-<p>Find new songs and enjoy music from talented artists around the world.</p>
-<a class="action" href="#" onclick="showPage('music');return false">Explore Music</a>
+<div class="card">
+<h3>Recent Stories</h3>
+<div id="homeStatuses">Loading...</div>
 </div>
+</section>
 
-<div class="section">
-<h3>🌍 Meet Artists</h3>
-<p>A global community for musicians and music lovers.</p>
-<a class="action" href="#" onclick="showPage('artists');return false">Explore Artists</a>
+<section id="chat" class="page">
+<div class="card">
+<h3>Messages</h3>
+<div id="messages">Loading...</div>
+<hr>
+<h3>Send Message</h3>
+<input id="message" placeholder="Write a message...">
+<label>Attach photo or video</label>
+<input type="file" id="chatFile" accept="image/*,video/*">
+<button class="action" id="send">Send</button>
+<p id="chatNotice"></p>
+</div>
+</section>
+
+<section id="status" class="page">
+<div class="card">
+<h3>Create Status</h3>
+<textarea id="statusText" placeholder="What's happening?"></textarea>
+<label>Choose photo or video</label>
+<input type="file" id="statusFile" accept="image/*,video/*">
+<button class="action" id="shareStatus">Share Status</button>
+<p id="statusNotice"></p>
+</div>
+<div class="card">
+<h3>Recent Statuses</h3>
+<div id="statuses">Loading...</div>
+</div>
+</section>
+
+<section id="music" class="page">
+<div class="card">
+<h3>Adam MK Music Hub</h3>
+<input type="file" id="songFile" accept="audio/*">
+<div id="musicResult"></div>
+</div>
+</section>
+
+<section id="profile" class="page">
+<div class="card">
+<h3>My Profile</h3>
+<img id="myPhoto" class="avatar big" alt="Profile photo">
+<label>Change profile picture</label>
+<input type="file" id="profileFile" accept="image/*">
+<input id="profileName" placeholder="Your name">
+<textarea id="about" placeholder="About me"></textarea>
+<button class="action" id="saveProfile">Save Profile</button>
+<p id="profileNotice"></p>
+<button class="secondary" id="logout">Logout</button>
+</div>
+</section>
+
 </div>
 </main>
 
-<footer>
-© 2026 Adam MK Music Hub
-<br>Created for music lovers worldwide.
-</footer>
+<footer>© 2026 Adam MK Chat</footer>
 
-<script src="script.js"></script>
+<script type="module">
+import {initializeApp}
+from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
+
+import {
+getAuth,createUserWithEmailAndPassword,
+signInWithEmailAndPassword,onAuthStateChanged,
+signOut,updateProfile
+} from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
+
+import {
+getFirestore,collection,addDoc,setDoc,
+doc,getDoc,onSnapshot,query,orderBy,
+limit,serverTimestamp
+} from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
+
+import {
+getStorage,ref,uploadBytes,getDownloadURL
+} from "https://www.gstatic.com/firebasejs/13.4.0/firebase-storage.js";
+
+const firebaseConfig = {
+apiKey:"AIzaSyBbJJMra2vd8yT3DtQPZsL6Oh2TcimLLvo",
+authDomain:"adam-mk-chat.firebaseapp.com",
+projectId:"adam-mk-chat",
+storageBucket:"adam-mk-chat.firebasestorage.app",
+messagingSenderId:"588046117387",
+appId:"1:588046117387:web:8580b9fec232f16713750e",
+measurementId:"G-6JR0QVTWK5"
+};
+
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
+const storage=getStorage(app);
+
+let currentUser=null;
+let myData={};
+let stopMessages=null;
+let stopStatuses=null;
+
+const el=id=>document.getElementById(id);
+const say=(id,msg)=>el(id).textContent=msg;
+
+function userName(){
+return myData.name ||
+currentUser?.displayName ||
+currentUser?.email?.split("@")[0] || "User";
+}
+
+function photo(){
+return myData.photoURL || "";
+}
+
+// Upload media to Firebase Storage
+async function uploadFile(file,path){
+if(!file) return null;
+
+const fileRef=ref(storage,path);
+await uploadBytes(fileRef,file);
+return await getDownloadURL(fileRef);
+}
+
+// Safe image element
+function makeAvatar(url,name){
+const img=document.createElement("img");
+img.className="avatar";
+img.alt=name || "User";
+img.src=url || "https://placehold.co/100x100/e5f1fc/0876d1?text=User";
+return img;
+}
+
+// Navigation
+document.querySelectorAll("[data-page]").forEach(btn=>{
+btn.onclick=()=>{
+document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+el(btn.dataset.page).classList.add("active");
+};
+});
+
+// CREATE ACCOUNT
+el("signup").onclick=async()=>{
+const name=el("name").value.trim();
+const email=el("email").value.trim();
+const password=el("password").value;
+
+if(!name || !email || password.length<6){
+return say("authNotice","Enter name, email and password (6 characters minimum).");
+}
+
+try{
+const result=await createUserWithEmailAndPassword(auth,email,password);
+await updateProfile(result.user,{displayName:name});
+
+await setDoc(doc(db,"users",result.user.uid),{
+name,email,about:"",photoURL:"",
+createdAt:serverTimestamp()
+});
+
+say("authNotice","Account created!");
+}catch(e){say("authNotice",e.message);}
+};
+
+// LOGIN
+el("login").onclick=async()=>{
+try{
+await signInWithEmailAndPassword(
+auth,el("email").value.trim(),el("password").value
+);
+}catch(e){say("authNotice",e.message);}
+};
+
+// AUTH STATE
+onAuthStateChanged(auth,async user=>{
+currentUser=user;
+
+if(!user){
+el("auth").style.display="block";
+el("app").style.display="none";
+if(stopMessages)stopMessages();
+if(stopStatuses)stopStatuses();
+return;
+}
+
+el("auth").style.display="none";
+el("app").style.display="block";
+
+try{
+const snap=await getDoc(doc(db,"users",user.uid));
+myData=snap.exists()?snap.data():{
+name:user.displayName || "User",
+about:"",
+photoURL:""
+};
+
+if(!snap.exists()){
+await setDoc(doc(db,"users",user.uid),myData);
+}
+
+el("profileName").value=userName();
+el("about").value=myData.about || "";
+el("myPhoto").src=photo() ||
+"https://placehold.co/100x100?text=User";
+el("welcome").textContent="Welcome, "+userName();
+
+listenMessages();
+listenStatuses();
+
+}catch(e){
+say("profileNotice",e.message);
+}
+});
+
+// SEND TEXT OR MEDIA MESSAGE
+el("send").onclick=async()=>{
+if(!currentUser)return;
+
+const text=el("message").value.trim();
+const file=el("chatFile").files[0];
+
+if(!text && !file)return;
+
+try{
+let mediaURL="";
+let mediaType="";
+
+if(file){
+mediaType=file.type.startsWith("video/")?"video":"image";
+mediaURL=await uploadFile(
+file,"messages/"+currentUser.uid+"/"+Date.now()+"_"+file.name
+);
+}
+
+await addDoc(collection(db,"messages"),{
+text,
+mediaURL,
+mediaType,
+senderId:currentUser.uid,
+senderName:userName(),
+senderPhoto:photo(),
+createdAt:serverTimestamp()
+});
+
+el("message").value="";
+el("chatFile").value="";
+say("chatNotice","Message sent!");
+}catch(e){say("chatNotice",e.message);}
+};
+
+// RECEIVE MESSAGES
+function listenMessages(){
+if(stopMessages)stopMessages();
+
+const q=query(collection(db,"messages"),
+orderBy("createdAt","asc"),limit(100));
+
+stopMessages=onSnapshot(q,snapshot=>{
+const box=el("messages");
+box.replaceChildren();
+
+snapshot.forEach(item=>{
+const d=item.data();
+const post=document.createElement("div");
+post.className="post";
+
+const line=document.createElement("div");
+line.className="userline";
+
+line.append(makeAvatar(d.senderPhoto,d.senderName));
+
+const name=document.createElement("b");
+name.textContent=d.senderName || "User";
+line.append(name);
+post.append(line);
+
+if(d.text){
+const p=document.createElement("p");
+p.textContent=d.text;
+post.append(p);
+}
+
+if(d.mediaURL){
+if(d.mediaType==="video"){
+const video=document.createElement("video");
+video.src=d.mediaURL;
+video.controls=true;
+video.className="media";
+post.append(video);
+}else{
+const img=document.createElement("img");
+img.src=d.mediaURL;
+img.className="media";
+img.alt="Shared photo";
+post.append(img);
+}
+}
+
+box.append(post);
+});
+},e=>say("chatNotice",e.message));
+}
+
+// SHARE PHOTO OR VIDEO STATUS
+el("shareStatus").onclick=async()=>{
+if(!currentUser)return;
+
+const text=el("statusText").value.trim();
+const file=el("statusFile").files[0];
+
+if(!text && !file){
+return say("statusNotice","Write something or choose a photo/video.");
+}
+
+try{
+let mediaURL="";
+let mediaType="";
+
+if(file){
+mediaType=file.type.startsWith("video/")?"video":"image";
+mediaURL=await uploadFile(
+file,"statuses/"+currentUser.uid+"/"+Date.now()+"_"+file.name
+);
+}
+
+await addDoc(collection(db,"statuses"),{
+text,
+mediaURL,
+mediaType,
+userId:currentUser.uid,
+userName:userName(),
+userPhoto:photo(),
+createdAt:serverTimestamp()
+});
+
+el("statusText").value="";
+el("statusFile").value="";
+say("statusNotice","Status shared successfully!");
+}catch(e){say("statusNotice",e.message);}
+};
+
+// DISPLAY STATUSES
+function listenStatuses(){
+if(stopStatuses)stopStatuses();
+
+const q=query(collection(db,"statuses"),
+orderBy("createdAt","desc"),limit(30));
+
+stopStatuses=onSnapshot(q,snapshot=>{
+["statuses","homeStatuses"].forEach(id=>{
+const box=el(id);
+box.replaceChildren();
+
+if(snapshot.empty){
+box.textContent="No statuses yet.";
+return;
+}
+
+snapshot.forEach(item=>{
+const d=item.data();
+const post=document.createElement("div");
+post.className="post";
+
+const line=document.createElement("div");
+line.className="userline";
+line.append(makeAvatar(d.userPhoto,d.userName));
+
+const name=document.createElement("b");
+name.textContent=d.userName || "User";
+line.append(name);
+post.append(line);
+
+if(d.text){
+const p=document.createElement("p");
+p.textContent=d.text;
+post.append(p);
+}
+
+if(d.mediaURL){
+if(d.mediaType==="video"){
+const v=document.createElement("video");
+v.src=d.mediaURL;
+v.controls=true;
+v.className="media";
+post.append(v);
+}else{
+const img=document.createElement("img");
+img.src=d.mediaURL;
+img.className="media";
+post.append(img);
+}
+}
+
+box.append(post);
+});
+});
+},e=>say("statusNotice",e.message));
+}
+
+// SAVE PROFILE AND PICTURE
+el("saveProfile").onclick=async()=>{
+if(!currentUser)return;
+
+const name=el("profileName").value.trim();
+const about=el("about").value.trim();
+const file=el("profileFile").files[0];
+
+if(!name)return say("profileNotice","Enter your name.");
+
+try{
+let photoURL=photo();
+
+if(file){
+photoURL=await uploadFile(
+file,"users/"+currentUser.uid+"/profile_"+Date.now()
+);
+}
+
+await updateProfile(currentUser,{displayName:name});
+
+myData={...myData,name,about,photoURL};
+
+await setDoc(doc(db,"users",currentUser.uid),{
+name,about,photoURL,email:currentUser.email
+},{merge:true});
+
+el("myPhoto").src=photoURL ||
+"https://placehold.co/100x100?text=User";
+el("welcome").textContent="Welcome, "+name;
+
+say("profileNotice","Profile saved successfully!");
+}catch(e){say("profileNotice",e.message);}
+};
+
+// MUSIC PREVIEW
+el("songFile").onchange=()=>{
+const file=el("songFile").files[0];
+if(!file)return;
+
+const audio=document.createElement("audio");
+audio.controls=true;
+audio.src=URL.createObjectURL(file);
+audio.style.width="100%";
+
+el("musicResult").replaceChildren(audio);
+};
+
+// LOGOUT
+el("logout").onclick=async()=>{
+await signOut(auth);
+};
+
+</script>
 </body>
 </html>
