@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Adam MK Chat</title>
+
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial;background:#eef4fa;color:#18304a}
@@ -23,17 +24,22 @@ textarea{resize:vertical}
 #app{display:none}
 .post{padding:12px 0;border-bottom:1px solid #eee;overflow-wrap:anywhere}
 .avatar{width:43px;height:43px;border-radius:50%;object-fit:cover;background:#dceafa}
-.avatar.big{width:95px;height:95px}
+.avatar.big{width:100px;height:100px}
 .userline{display:flex;align-items:center;gap:10px;margin-bottom:9px}
 .media{width:100%;max-height:400px;object-fit:contain;border-radius:10px;margin-top:8px;background:#111}
 small{color:#718096}
+.online-dot{width:10px;height:10px;background:#16b85b;border-radius:50%;display:inline-block}
+.offline-dot{width:10px;height:10px;background:#999;border-radius:50%;display:inline-block}
+.user-status{font-size:12px;color:#718096;margin-top:4px}
+.emoji-box{display:flex;flex-wrap:wrap;gap:5px;background:#f4f8fc;padding:8px;border-radius:10px;margin:8px 0}
+.emoji-box button{font-size:22px;background:white;padding:6px}
 #notice{color:#0876d1}
-.story{display:inline-block;width:90px;vertical-align:top;text-align:center;margin:5px}
-.story img{width:65px;height:65px;border-radius:50%;object-fit:cover;border:3px solid #0876d1}
-.story button{background:none;padding:2px}
 footer{text-align:center;padding:20px;color:#718096}
+.profile-center{text-align:center}
+#profilePreview{margin:10px auto;display:block}
 </style>
 </head>
+
 <body>
 
 <header>
@@ -70,6 +76,12 @@ footer{text-align:center;padding:20px;color:#718096}
 <h3>Welcome to Adam MK Chat</h3>
 <p id="welcome"></p>
 </div>
+
+<div class="card">
+<h3>Members Online</h3>
+<div id="onlineMembers">Loading...</div>
+</div>
+
 <div class="card">
 <h3>Recent Stories</h3>
 <div id="homeStatuses">Loading...</div>
@@ -81,11 +93,40 @@ footer{text-align:center;padding:20px;color:#718096}
 <h3>Messages</h3>
 <div id="messages">Loading...</div>
 <hr>
+
 <h3>Send Message</h3>
+
 <input id="message" placeholder="Write a message...">
+
+<div class="emoji-box" id="emojiBox">
+<button type="button">😀</button>
+<button type="button">😂</button>
+<button type="button">😍</button>
+<button type="button">🥰</button>
+<button type="button">😘</button>
+<button type="button">❤️</button>
+<button type="button">💕</button>
+<button type="button">💖</button>
+<button type="button">🔥</button>
+<button type="button">👏</button>
+<button type="button">👍</button>
+<button type="button">🙏</button>
+<button type="button">😭</button>
+<button type="button">😎</button>
+<button type="button">🥳</button>
+<button type="button">💯</button>
+<button type="button">🌹</button>
+<button type="button">💔</button>
+<button type="button">🤲</button>
+<button type="button">🎵</button>
+<button type="button">❤️‍🔥</button>
+<button type="button">😊</button>
+</div>
+
 <label>Attach photo or video</label>
 <input type="file" id="chatFile" accept="image/*,video/*">
-<button class="action" id="send">Send</button>
+
+<button class="action" id="send">Send Message</button>
 <p id="chatNotice"></p>
 </div>
 </section>
@@ -99,6 +140,7 @@ footer{text-align:center;padding:20px;color:#718096}
 <button class="action" id="shareStatus">Share Status</button>
 <p id="statusNotice"></p>
 </div>
+
 <div class="card">
 <h3>Recent Statuses</h3>
 <div id="statuses">Loading...</div>
@@ -114,15 +156,26 @@ footer{text-align:center;padding:20px;color:#718096}
 </section>
 
 <section id="profile" class="page">
-<div class="card">
+<div class="card profile-center">
 <h3>My Profile</h3>
+
 <img id="myPhoto" class="avatar big" alt="Profile photo">
+
+<p id="myPresence"></p>
+
 <label>Change profile picture</label>
 <input type="file" id="profileFile" accept="image/*">
+
+<img id="profilePreview" class="avatar big" style="display:none" alt="Preview">
+
 <input id="profileName" placeholder="Your name">
 <textarea id="about" placeholder="About me"></textarea>
+
 <button class="action" id="saveProfile">Save Profile</button>
+
 <p id="profileNotice"></p>
+
+<hr>
 <button class="secondary" id="logout">Logout</button>
 </div>
 </section>
@@ -133,6 +186,7 @@ footer{text-align:center;padding:20px;color:#718096}
 <footer>© 2026 Adam MK Chat</footer>
 
 <script type="module">
+
 import {initializeApp}
 from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
 
@@ -169,8 +223,13 @@ const storage=getStorage(app);
 
 let currentUser=null;
 let myData={};
+let usersMap={};
 let stopMessages=null;
 let stopStatuses=null;
+let stopUsers=null;
+let presenceTimer=null;
+let presenceRefresh=null;
+let latestMessages=[];
 
 const el=id=>document.getElementById(id);
 const say=(id,msg)=>el(id).textContent=msg;
@@ -185,16 +244,7 @@ function photo(){
 return myData.photoURL || "";
 }
 
-// Upload media to Firebase Storage
-async function uploadFile(file,path){
-if(!file) return null;
-
-const fileRef=ref(storage,path);
-await uploadBytes(fileRef,file);
-return await getDownloadURL(fileRef);
-}
-
-// Safe image element
+// AVATAR
 function makeAvatar(url,name){
 const img=document.createElement("img");
 img.className="avatar";
@@ -203,11 +253,110 @@ img.src=url || "https://placehold.co/100x100/e5f1fc/0876d1?text=User";
 return img;
 }
 
-// Navigation
+// CHECK ONLINE STATUS
+function isOnline(user){
+if(!user || !user.lastSeen)return false;
+
+const time=user.lastSeen.toMillis
+?user.lastSeen.toMillis()
+:0;
+
+return time>0 && Date.now()-time<90000;
+}
+
+// PRESENCE DISPLAY
+function presenceElement(uid){
+const user=usersMap[uid] || {};
+const online=isOnline(user);
+
+const div=document.createElement("div");
+div.className="user-status";
+
+const dot=document.createElement("span");
+dot.className=online?"online-dot":"offline-dot";
+
+div.append(dot);
+div.append(document.createTextNode(
+online?" Online":" Offline"
+));
+
+return div;
+}
+
+// UPLOAD FILE
+async function uploadFile(file,path){
+if(!file)return null;
+
+const fileRef=ref(storage,path);
+await uploadBytes(fileRef,file);
+return await getDownloadURL(fileRef);
+}
+
+// UPDATE ONLINE
+async function updatePresence(){
+if(!currentUser)return;
+
+try{
+await setDoc(doc(db,"users",currentUser.uid),{
+online:true,
+lastSeen:serverTimestamp()
+},{merge:true});
+}catch(e){
+console.error("Presence error:",e);
+}
+}
+
+// STOP PRESENCE
+function stopPresence(){
+if(presenceTimer){
+clearInterval(presenceTimer);
+presenceTimer=null;
+}
+
+if(presenceRefresh){
+clearInterval(presenceRefresh);
+presenceRefresh=null;
+}
+}
+
+// LOG OUT PRESENCE
+async function setOffline(){
+if(!currentUser)return;
+
+try{
+await setDoc(doc(db,"users",currentUser.uid),{
+online:false,
+lastSeen:serverTimestamp()
+},{merge:true});
+}catch(e){
+console.error(e);
+}
+}
+
+// NAVIGATION
 document.querySelectorAll("[data-page]").forEach(btn=>{
 btn.onclick=()=>{
-document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+document.querySelectorAll(".page").forEach(p=>
+p.classList.remove("active")
+);
 el(btn.dataset.page).classList.add("active");
+};
+});
+
+// EMOJI PICKER
+el("emojiBox").querySelectorAll("button").forEach(btn=>{
+btn.onclick=()=>{
+const input=el("message");
+const start=input.selectionStart;
+const end=input.selectionEnd;
+const value=input.value;
+
+input.value=value.slice(0,start)+btn.textContent+
+value.slice(end);
+
+input.focus();
+input.selectionStart=input.selectionEnd=
+start+btn.textContent.length;
 };
 });
 
@@ -218,40 +367,55 @@ const email=el("email").value.trim();
 const password=el("password").value;
 
 if(!name || !email || password.length<6){
-return say("authNotice","Enter name, email and password (6 characters minimum).");
+return say("authNotice",
+"Enter name, email and password (6 characters minimum).");
 }
 
 try{
-const result=await createUserWithEmailAndPassword(auth,email,password);
+const result=await createUserWithEmailAndPassword(
+auth,email,password
+);
+
 await updateProfile(result.user,{displayName:name});
 
 await setDoc(doc(db,"users",result.user.uid),{
 name,email,about:"",photoURL:"",
+online:true,lastSeen:serverTimestamp(),
 createdAt:serverTimestamp()
 });
 
 say("authNotice","Account created!");
-}catch(e){say("authNotice",e.message);}
+
+}catch(e){
+say("authNotice",e.message);
+}
 };
 
 // LOGIN
 el("login").onclick=async()=>{
 try{
 await signInWithEmailAndPassword(
-auth,el("email").value.trim(),el("password").value
+auth,el("email").value.trim(),
+el("password").value
 );
-}catch(e){say("authNotice",e.message);}
+}catch(e){
+say("authNotice",e.message);
+}
 };
 
 // AUTH STATE
 onAuthStateChanged(auth,async user=>{
+stopPresence();
+
+if(stopMessages)stopMessages();
+if(stopStatuses)stopStatuses();
+if(stopUsers)stopUsers();
+
 currentUser=user;
 
 if(!user){
 el("auth").style.display="block";
 el("app").style.display="none";
-if(stopMessages)stopMessages();
-if(stopStatuses)stopStatuses();
 return;
 }
 
@@ -260,6 +424,7 @@ el("app").style.display="block";
 
 try{
 const snap=await getDoc(doc(db,"users",user.uid));
+
 myData=snap.exists()?snap.data():{
 name:user.displayName || "User",
 about:"",
@@ -274,8 +439,20 @@ el("profileName").value=userName();
 el("about").value=myData.about || "";
 el("myPhoto").src=photo() ||
 "https://placehold.co/100x100?text=User";
+
 el("welcome").textContent="Welcome, "+userName();
 
+updatePresence();
+
+presenceTimer=setInterval(updatePresence,30000);
+
+// Refresh displayed online/offline labels
+presenceRefresh=setInterval(()=>{
+renderMessages();
+renderOnlineMembers();
+},20000);
+
+listenUsers();
 listenMessages();
 listenStatuses();
 
@@ -284,7 +461,68 @@ say("profileNotice",e.message);
 }
 });
 
-// SEND TEXT OR MEDIA MESSAGE
+// LISTEN TO ALL USERS
+function listenUsers(){
+
+const q=collection(db,"users");
+
+stopUsers=onSnapshot(q,snapshot=>{
+usersMap={};
+
+snapshot.forEach(item=>{
+usersMap[item.id]=item.data();
+});
+
+renderMessages();
+renderOnlineMembers();
+
+const myUser=usersMap[currentUser?.uid];
+
+if(myUser){
+el("myPresence").textContent=
+isOnline(myUser)?"🟢 Online":"⚪ Offline";
+}
+},e=>console.error(e));
+}
+
+// ONLINE MEMBERS
+function renderOnlineMembers(){
+
+const box=el("onlineMembers");
+box.replaceChildren();
+
+let count=0;
+
+Object.entries(usersMap).forEach(([uid,d])=>{
+if(!isOnline(d))return;
+
+count++;
+
+const line=document.createElement("div");
+line.className="userline";
+
+line.append(makeAvatar(d.photoURL,d.name));
+
+const info=document.createElement("div");
+
+const name=document.createElement("b");
+name.textContent=d.name || "User";
+
+const status=document.createElement("div");
+status.className="user-status";
+status.innerHTML='<span class="online-dot"></span> Online';
+
+info.append(name,status);
+line.append(info);
+box.append(line);
+});
+
+if(count===0){
+box.textContent="No members online right now.";
+}
+}
+
+// SEND MESSAGE
 el("send").onclick=async()=>{
 if(!currentUser)return;
 
@@ -299,8 +537,10 @@ let mediaType="";
 
 if(file){
 mediaType=file.type.startsWith("video/")?"video":"image";
+
 mediaURL=await uploadFile(
-file,"messages/"+currentUser.uid+"/"+Date.now()+"_"+file.name
+file,
+"messages/"+currentUser.uid+"/"+Date.now()+"_"+file.name
 );
 }
 
@@ -317,22 +557,42 @@ createdAt:serverTimestamp()
 el("message").value="";
 el("chatFile").value="";
 say("chatNotice","Message sent!");
-}catch(e){say("chatNotice",e.message);}
+
+}catch(e){
+say("chatNotice",e.message);
+}
 };
 
 // RECEIVE MESSAGES
 function listenMessages(){
-if(stopMessages)stopMessages();
 
-const q=query(collection(db,"messages"),
-orderBy("createdAt","asc"),limit(100));
+const q=query(
+collection(db,"messages"),
+orderBy("createdAt","asc"),
+limit(100)
+);
 
 stopMessages=onSnapshot(q,snapshot=>{
-const box=el("messages");
-box.replaceChildren();
+latestMessages=[];
 
 snapshot.forEach(item=>{
-const d=item.data();
+latestMessages.push(item.data());
+});
+
+renderMessages();
+
+},e=>say("chatNotice",e.message));
+}
+
+// DISPLAY MESSAGES
+function renderMessages(){
+
+const box=el("messages");
+if(!box)return;
+
+box.replaceChildren();
+
+latestMessages.forEach(d=>{
 const post=document.createElement("div");
 post.className="post";
 
@@ -341,9 +601,18 @@ line.className="userline";
 
 line.append(makeAvatar(d.senderPhoto,d.senderName));
 
+const info=document.createElement("div");
+
 const name=document.createElement("b");
 name.textContent=d.senderName || "User";
-line.append(name);
+
+info.append(name);
+
+if(d.senderId){
+info.append(presenceElement(d.senderId));
+}
+
+line.append(info);
 post.append(line);
 
 if(d.text){
@@ -370,10 +639,9 @@ post.append(img);
 
 box.append(post);
 });
-},e=>say("chatNotice",e.message));
 }
 
-// SHARE PHOTO OR VIDEO STATUS
+// SHARE STATUS
 el("shareStatus").onclick=async()=>{
 if(!currentUser)return;
 
@@ -381,7 +649,8 @@ const text=el("statusText").value.trim();
 const file=el("statusFile").files[0];
 
 if(!text && !file){
-return say("statusNotice","Write something or choose a photo/video.");
+return say("statusNotice",
+"Write something or choose a photo/video.");
 }
 
 try{
@@ -390,8 +659,10 @@ let mediaType="";
 
 if(file){
 mediaType=file.type.startsWith("video/")?"video":"image";
+
 mediaURL=await uploadFile(
-file,"statuses/"+currentUser.uid+"/"+Date.now()+"_"+file.name
+file,
+"statuses/"+currentUser.uid+"/"+Date.now()+"_"+file.name
 );
 }
 
@@ -407,19 +678,27 @@ createdAt:serverTimestamp()
 
 el("statusText").value="";
 el("statusFile").value="";
+
 say("statusNotice","Status shared successfully!");
-}catch(e){say("statusNotice",e.message);}
+
+}catch(e){
+say("statusNotice",e.message);
+}
 };
 
-// DISPLAY STATUSES
+// LISTEN STATUSES
 function listenStatuses(){
-if(stopStatuses)stopStatuses();
 
-const q=query(collection(db,"statuses"),
-orderBy("createdAt","desc"),limit(30));
+const q=query(
+collection(db,"statuses"),
+orderBy("createdAt","desc"),
+limit(30)
+);
 
 stopStatuses=onSnapshot(q,snapshot=>{
+
 ["statuses","homeStatuses"].forEach(id=>{
+
 const box=el(id);
 box.replaceChildren();
 
@@ -430,15 +709,18 @@ return;
 
 snapshot.forEach(item=>{
 const d=item.data();
+
 const post=document.createElement("div");
 post.className="post";
 
 const line=document.createElement("div");
 line.className="userline";
+
 line.append(makeAvatar(d.userPhoto,d.userName));
 
 const name=document.createElement("b");
 name.textContent=d.userName || "User";
+
 line.append(name);
 post.append(line);
 
@@ -466,10 +748,27 @@ post.append(img);
 box.append(post);
 });
 });
+
 },e=>say("statusNotice",e.message));
 }
 
-// SAVE PROFILE AND PICTURE
+// PROFILE PHOTO PREVIEW
+el("profileFile").onchange=()=>{
+const file=el("profileFile").files[0];
+
+if(!file)return;
+
+if(!file.type.startsWith("image/")){
+say("profileNotice","Please choose an image.");
+return;
+}
+
+const preview=el("profilePreview");
+preview.src=URL.createObjectURL(file);
+preview.style.display="block";
+};
+
+// SAVE PROFILE
 el("saveProfile").onclick=async()=>{
 if(!currentUser)return;
 
@@ -477,31 +776,52 @@ const name=el("profileName").value.trim();
 const about=el("about").value.trim();
 const file=el("profileFile").files[0];
 
-if(!name)return say("profileNotice","Enter your name.");
+if(!name){
+return say("profileNotice","Enter your name.");
+}
 
 try{
 let photoURL=photo();
 
 if(file){
 photoURL=await uploadFile(
-file,"users/"+currentUser.uid+"/profile_"+Date.now()
+file,
+"users/"+currentUser.uid+"/profile_"+Date.now()
 );
 }
 
-await updateProfile(currentUser,{displayName:name});
+await updateProfile(currentUser,{
+displayName:name,
+photoURL:photoURL || ""
+});
 
-myData={...myData,name,about,photoURL};
+myData={
+...myData,
+name,
+about,
+photoURL
+};
 
 await setDoc(doc(db,"users",currentUser.uid),{
-name,about,photoURL,email:currentUser.email
+name,
+about,
+photoURL,
+email:currentUser.email
 },{merge:true});
 
 el("myPhoto").src=photoURL ||
 "https://placehold.co/100x100?text=User";
+
+el("profilePreview").style.display="none";
+el("profileFile").value="";
+
 el("welcome").textContent="Welcome, "+name;
 
 say("profileNotice","Profile saved successfully!");
-}catch(e){say("profileNotice",e.message);}
+
+}catch(e){
+say("profileNotice",e.message);
+}
 };
 
 // MUSIC PREVIEW
@@ -519,6 +839,8 @@ el("musicResult").replaceChildren(audio);
 
 // LOGOUT
 el("logout").onclick=async()=>{
+await setOffline();
+stopPresence();
 await signOut(auth);
 };
 
